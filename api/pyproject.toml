@@ -1,0 +1,5 @@
+# Tells Vercel where the FastAPI app lives when this directory is the project root.
+# https://vercel.com/docs/frameworks/backend/fastapi
+
+[tool.vercel]
+entrypoint = "app.main:app"

@@ -1,0 +1,7 @@
+# Used when Railway builder is NIXPACKS (fallback if Dockerfile is not used).
+# Pin Python when auto-detect misses `api/` layout.
+
+providers = ["python"]
+
+[variables]
+NIXPACKS_PYTHON_VERSION = "3.12"

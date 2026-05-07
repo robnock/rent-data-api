@@ -1,0 +1,9 @@
+# Railway config-as-code when Root Directory for the service is `api/`.
+# https://docs.railway.app/guides/config-as-code
+
+[build]
+# Prefer Docker — reliable when the repo is a monorepo or Nixpacks mis-detects.
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+# Start is `CMD` in Dockerfile (uvicorn on $PORT).
