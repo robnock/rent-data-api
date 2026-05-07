@@ -15,13 +15,13 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.config import settings
 
 
-def _ipv4_hostaddr(database_url: str) -> str | None:
+def _resolve_ipv4(database_url: str) -> str | None:
     """Return an IPv4 address for a hostname, if available.
 
     Some hosts (notably managed Postgres endpoints) return an IPv6 AAAA record.
     Railway's networking may not have IPv6 egress, causing connection attempts to
-    fail with "Network is unreachable". If an IPv4 A record exists, pass it as
-    libpq's `hostaddr` so psycopg connects over IPv4.
+    fail with "Network is unreachable". If an IPv4 A record exists, we can use it
+    directly as the connection host (works with `sslmode=require`).
     """
 
     host = make_url(database_url).host
@@ -43,14 +43,17 @@ def _ipv4_hostaddr(database_url: str) -> str | None:
     return infos[0][4][0]
 
 
-_hostaddr = _ipv4_hostaddr(settings.database_url)
-_connect_args = {"hostaddr": _hostaddr} if _hostaddr else {}
+_ipv4 = _resolve_ipv4(settings.database_url)
+_url = make_url(settings.database_url)
+if _ipv4:
+    # Prefer hard-forcing IPv4 as the host to avoid any IPv6 attempts.
+    # With `sslmode=require` (Supabase default), connecting via IP is OK.
+    _url = _url.set(host=_ipv4)
 
 engine = create_engine(
-    settings.database_url,
+    _url,
     future=True,
     pool_pre_ping=True,
-    connect_args=_connect_args,
 )
 
 SessionLocal = sessionmaker(
