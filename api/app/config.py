@@ -7,7 +7,7 @@ Values are read from environment variables (typically loaded from a local
 from __future__ import annotations
 
 import json
-from pydantic import Field, computed_field
+from pydantic import Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DEFAULT_ORIGINS = ["http://localhost:3000"]
@@ -47,6 +47,24 @@ class Settings(BaseSettings):
         default="postgresql+psycopg://localhost:5432/econ_data",
         description="SQLAlchemy URL for the Postgres database.",
     )
+
+    @field_validator("database_url")
+    @classmethod
+    def _normalize_database_url(cls, value: str) -> str:
+        """Normalize common Postgres URL schemes to psycopg (v3).
+
+        Railway/Supabase often provide `postgresql://...` (or legacy `postgres://...`),
+        which makes SQLAlchemy default to psycopg2 unless we specify the driver.
+        """
+
+        url = value.strip()
+        if url.startswith("postgresql+psycopg2://"):
+            return "postgresql+psycopg://" + url.removeprefix("postgresql+psycopg2://")
+        if url.startswith("postgresql://"):
+            return "postgresql+psycopg://" + url.removeprefix("postgresql://")
+        if url.startswith("postgres://"):
+            return "postgresql+psycopg://" + url.removeprefix("postgres://")
+        return url
 
     api_auth_required: bool = Field(
         default=False,
