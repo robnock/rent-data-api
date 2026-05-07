@@ -1,0 +1,58 @@
+```{r}
+library(tidyverse)
+```
+
+```{r}
+data <- read.csv('/Users/robwarnock/Library/CloudStorage/GoogleDrive-rwarnock@apartmentlist.com/Shared drives/Comms Team/Research Team/Rent Reports/Monthly Reports/2026/2026.05/data_files/Apartment_List_Rent_Growth_YoY_2026_04.csv') %>% 
+  mutate(
+    location_fips_code = as.character(location_fips_code),
+    location_fips_code = case_when(
+      location_type == "National" ~ "0",
+      location_type == "State"  ~ str_pad(location_fips_code, width = 2, side = "left", pad = "0"),
+      location_type == "County" ~ str_pad(location_fips_code, width = 5, side = "left", pad = "0"),
+      location_type == "City"   ~ str_pad(location_fips_code, width = 7, side = "left", pad = "0"),
+      location_type == "Metro"  ~ location_fips_code,
+      TRUE ~ NA_character_
+    )
+  )
+```
+
+```{r}
+locations <- data %>% 
+  select(
+    location_fips_code,
+    location_name,
+    location_type,
+    population,
+    state,
+    county,
+    metro
+  )
+```
+
+```{r}
+rent_growth_yoy <- data %>% 
+  select(
+    location_fips_code,
+    starts_with("X2")
+  ) %>% 
+  pivot_longer(
+    cols = starts_with("X2"), names_to = "period", names_prefix = "X", values_to = "value"
+  ) %>% 
+  mutate(
+    period = as.Date(paste0(str_replace_all(period, "_", "-"),"-01")),
+    date_updated_at = Sys.Date()
+  )
+```
+
+```{r}
+n_distinct(locations$location_fips_code) == nrow(locations)
+(rent_growth_yoy$location_fips_code %in% c(locations$location_fips_code))[FALSE]
+rent_growth_yoy %>% group_by(location_fips_code,period) %>% count() %>% filter(n>1)
+```
+
+```{r}
+path <- '/Users/robwarnock/Desktop/ai_dev_academy/ai-dev-academy-1/data/'
+write.csv(locations, paste0(path,'locations.csv'), row.names = FALSE)
+write.csv(rent_growth_yoy, paste0(path,'rent_growth_yoy.csv'), row.names = FALSE)
+```
