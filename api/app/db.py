@@ -6,6 +6,7 @@ The engine is created once at import time using the `DATABASE_URL` from
 
 from __future__ import annotations
 
+import logging
 import socket
 
 from sqlalchemy import create_engine
@@ -13,6 +14,8 @@ from sqlalchemy.engine.url import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
+
+logger = logging.getLogger("app.db")
 
 
 def _resolve_ipv4(database_url: str) -> str | None:
@@ -49,6 +52,13 @@ if _ipv4:
     # Prefer hard-forcing IPv4 as the host to avoid any IPv6 attempts.
     # With `sslmode=require` (Supabase default), connecting via IP is OK.
     _url = _url.set(host=_ipv4)
+
+logger.info(
+    "Database URL host resolution: original_host=%s resolved_ipv4=%s effective_host=%s",
+    make_url(settings.database_url).host,
+    _ipv4,
+    _url.host,
+)
 
 engine = create_engine(
     _url,
