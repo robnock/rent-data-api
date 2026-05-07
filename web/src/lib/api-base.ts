@@ -5,5 +5,11 @@ export function apiBaseUrl(): string {
   if (!raw) {
     return "http://localhost:8000";
   }
-  return raw.replace(/\/+$/, "");
+  const trimmed = raw.replace(/\/+$/, "");
+  // Vercel env vars are sometimes entered without a scheme (e.g. `foo.up.railway.app`).
+  // `fetch()` requires an absolute URL with protocol.
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
 }
